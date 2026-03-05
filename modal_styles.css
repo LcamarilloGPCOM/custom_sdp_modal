@@ -1,0 +1,78 @@
+/* Fondo oscuro transparente */
+.sdp-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; /* Muy alto para estar encima de todo */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* La caja blanca del modal */
+.sdp-modal-content {
+    background-color: #fff;
+    width: 600px;
+    max-width: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: sdpFadeIn 0.3s ease-out;
+}
+
+/* Animación de entrada */
+@keyframes sdpFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cabecera */
+.sdp-modal-header {
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sdp-modal-close {
+    cursor: pointer;
+    font-size: 24px;
+    font-weight: bold;
+    color: #aaa;
+    line-height: 1;
+}
+.sdp-modal-close:hover { color: #000; }
+
+/* Cuerpo */
+.sdp-modal-body {
+    padding: 20px;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.sdp-modal-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin-top: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Pie de página */
+.sdp-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e9ecef;
+    text-align: right;
+    background-color: #fff;
+}
