@@ -1,0 +1,110 @@
+// CONFIGURACIÓN
+const MODAL_SERVER_URL = 'https://cc.krispykreme.com.mx/editor-api/'; // <--- ¡CAMBIA ESTO POR TU IP O DOMINIO!
+
+let currentSteps = [];
+let currentStepIndex = 0;
+
+function showInstructionsModal(templateId) {
+    // 1. Conectamos al servidor Node para pedir las instrucciones
+    fetch(`${MODAL_SERVER_URL}/api/instructions`)
+        .then(response => response.json())
+        .then(data => {
+            if (data[templateId] && data[templateId].steps && data[templateId].steps.length > 0) {
+                currentSteps = data[templateId].steps;
+                currentStepIndex = 0;
+                createModalStructure();
+                updateModalContent(currentStepIndex);
+            } else {
+                console.log('No hay instrucciones configuradas para la plantilla ' + templateId);
+            }
+        })
+        .catch(err => console.error('Error conectando al servidor de modales:', err));
+}
+
+function createModalStructure() {
+    if (document.getElementById('sdpCustomModal')) return;
+
+    const modalHTML = `
+        <div id="sdpCustomModal" class="sdp-modal-backdrop">
+            <div class="sdp-modal-content">
+                <div class="sdp-modal-header">
+                    <h2 id="modalTitle">Instrucciones</h2>
+                    <span class="sdp-modal-close" onclick="closeCustomModal()">&times;</span>
+                </div>
+                <div class="sdp-modal-body">
+                    <div id="modalImageContainer" style="text-align:center; margin-bottom:15px;"></div>
+                    <div id="modalTextContent" style="font-size: 14px; color: #333;"></div>
+                </div>
+                <div class="sdp-modal-footer">
+                    <div style="float:left; font-size:12px; color:#999; margin-top:5px;">
+                        Paso <span id="stepCount">1</span> de <span id="totalSteps"></span>
+                    </div>
+                    <button id="prevBtn" class="btn" onclick="prevStep()">Anterior</button>
+                    <button id="nextBtn" class="btn btn-primary" onclick="nextStep()">Siguiente</button>
+                    <button id="finishBtn" class="btn btn-primary" style="display:none;" onclick="closeCustomModal()">Entendido, ir al formulario</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function updateModalContent(index) {
+    const step = currentSteps[index];
+    
+    // Título y Texto
+    document.getElementById('modalTitle').innerText = step.title;
+    document.getElementById('modalTextContent').innerHTML = step.content;
+    document.getElementById('stepCount').innerText = index + 1;
+    document.getElementById('totalSteps').innerText = currentSteps.length;
+
+    // Imagen (Manejo inteligente de ruta)
+    const imgContainer = document.getElementById('modalImageContainer');
+    if (step.image) {
+        // Si la imagen viene del editor, la ruta es relativa. Le pegamos la URL del servidor.
+        // Limpiamos la ruta por si acaso viene con doble slash
+        let cleanPath = step.image.startsWith('/') ? step.image : '/' + step.image;
+        // Fix para que la imagen cargue desde el puerto 3050
+        // Si la ruta guardada en el JSON ya incluye custom_modal, debemos ajustarla según como sirva static el Node
+        // Asumimos que Node sirve la raiz del proyecto.
+        const imageUrl = `${MODAL_SERVER_URL}${cleanPath.replace('/editor-api/', '')}`; 
+        
+        imgContainer.innerHTML = `<img src="${imageUrl}" style="max-width:100%; max-height:300px; border:1px solid #ddd; border-radius:4px;">`;
+    } else {
+        imgContainer.innerHTML = '';
+    }
+
+    // Botones
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const finishBtn = document.getElementById('finishBtn');
+
+    prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+    
+    if (index === currentSteps.length - 1) {
+        nextBtn.style.display = 'none';
+        finishBtn.style.display = 'inline-block';
+    } else {
+        nextBtn.style.display = 'inline-block';
+        finishBtn.style.display = 'none';
+    }
+}
+
+function nextStep() {
+    if (currentStepIndex < currentSteps.length - 1) {
+        currentStepIndex++;
+        updateModalContent(currentStepIndex);
+    }
+}
+
+function prevStep() {
+    if (currentStepIndex > 0) {
+        currentStepIndex--;
+        updateModalContent(currentStepIndex);
+    }
+}
+
+function closeCustomModal() {
+    const modal = document.getElementById('sdpCustomModal');
+    if (modal) modal.remove();
+}

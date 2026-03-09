@@ -54,6 +54,7 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
+
 /**
  * Carga las instrucciones desde la API y lanza el modal
  */

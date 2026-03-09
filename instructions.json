@@ -2,9 +2,19 @@
   "9007": {
     "steps": [
       {
-        "title": "a",
-        "content": "a",
+        "title": "Identificación del cable en el POS",
+        "content": "<p>Localiza la parte posterior de tu equipo <strong>POS NCR</strong>. Identifica el cable de red (Ethernet) conectado al puerto etiquetado como <strong>LAN</strong> o con el icono de red <i class=\"fa fa-network-wired\"></i>.</p>\n<ul>\n  <li>Asegúrate de que el clip del conector esté firme y no presente daños.</li>\n  <li>Verifica que los LEDs (verde/ámbar) del puerto estén encendidos o parpadeando.</li>\n</ul>",
         "image": "/editor-api/images/1772721210397-descarga.jpg"
+      },
+      {
+        "title": "Conexión al Meraki (Puerto 3)",
+        "content": "<p>Sigue el cable de red desde el POS hasta el switch <strong>Cisco Meraki</strong>. El cable debe estar conectado estrictamente en el <strong>Puerto 3</strong>.</p>\n<div style=\"background-color: #fff3cd; padding: 10px; border-left: 5px solid #ffecb5; margin: 10px 0;\">\n  <strong>¡Importante!</strong> Si el cable está en otro puerto, cámbialo al número 3 para asegurar que la configuración de la VLAN sea la correcta para el punto de venta.\n</div>",
+        "image": ""
+      },
+      {
+        "title": "Validación de estado en el Switch",
+        "content": "<p>Una vez conectado al Puerto 3, observa la luz indicadora en el Meraki:</p>\n<ul style=\"list-style-type: none; padding-left: 0;\">\n  <li><span style=\"color: green;\">●</span> <strong>Verde fijo:</strong> Conexión exitosa a 1000 Mbps.</li>\n  <li><span style=\"color: orange;\">●</span> <strong>Ámbar fijo:</strong> Conexión exitosa a 10/100 Mbps.</li>\n  <li><span style=\"color: #ccc;\">○</span> <strong>Apagado:</strong> No hay señal física. Revisa o cambia el cable de red.</li>\n</ul>",
+        "image": ""
       }
     ]
   }
