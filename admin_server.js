@@ -15,6 +15,8 @@ const EDITOR_BASIC_AUTH_PASS = process.env.EDITOR_BASIC_AUTH_PASS || '';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const IMAGES_DIR = path.join(__dirname, 'images');
 const INSTRUCTIONS_FILE = path.join(__dirname, 'instructions.json');
+const SDP_API_BASE = 'https://127.0.0.1:8080/api/v3';
+const SDP_AGENT = new https.Agent({ rejectUnauthorized: false });
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
     'image/jpeg',
@@ -24,7 +26,7 @@ const ALLOWED_IMAGE_MIME_TYPES = new Set([
 ]);
 const ALLOWED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
 
-app.use(bodyParser.json({ limit: '1mb' }));
+app.use(bodyParser.json({ limit: '2mb' }));
 
 function hasEditorAuthConfigured() {
     return Boolean(EDITOR_BASIC_AUTH_USER && EDITOR_BASIC_AUTH_PASS);
@@ -74,6 +76,12 @@ function sanitizeText(value) {
         .trim();
 }
 
+function sanitizeFieldName(value) {
+    return String(value || '')
+        .trim()
+        .replace(/[^\w.-]/g, '');
+}
+
 function sanitizeHtmlContent(value) {
     let html = String(value || '').replace(/\0/g, '').trim();
 
@@ -92,7 +100,15 @@ function normalizeImagePath(value) {
         return '';
     }
 
-    return imagePath.startsWith('/editor-api/images/') ? imagePath : '';
+    if (imagePath.startsWith('/editor-api/images/')) {
+        return imagePath;
+    }
+
+    if (imagePath.startsWith('/images/')) {
+        return '/editor-api' + imagePath;
+    }
+
+    return '';
 }
 
 function normalizeStep(step) {
@@ -113,6 +129,70 @@ function normalizeStep(step) {
     return normalizedStep;
 }
 
+function normalizeSteps(steps) {
+    if (!Array.isArray(steps)) {
+        return [];
+    }
+
+    return steps.map(normalizeStep).filter(Boolean);
+}
+
+function normalizeItemConfig(itemId, config) {
+    const cleanItemId = String(itemId || '').trim();
+    if (!/^\d+$/.test(cleanItemId) || !config || typeof config !== 'object') {
+        return null;
+    }
+
+    const steps = normalizeSteps(config.steps);
+    const label = sanitizeText(config.label);
+
+    if (steps.length === 0 && !label) {
+        return null;
+    }
+
+    return {
+        id: cleanItemId,
+        label,
+        steps
+    };
+}
+
+function isTemplateConfigMeaningful(config) {
+    return Boolean(
+        config.item_field ||
+        config.default_steps.length > 0 ||
+        Object.keys(config.items).length > 0
+    );
+}
+
+function normalizeTemplateConfig(config) {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+        return null;
+    }
+
+    const itemField = sanitizeFieldName(config.item_field);
+    const defaultSteps = normalizeSteps(Array.isArray(config.default_steps) ? config.default_steps : config.steps);
+    const normalizedItems = {};
+
+    Object.entries(config.items || {}).forEach(([itemId, itemConfig]) => {
+        const normalizedItem = normalizeItemConfig(itemId, itemConfig);
+        if (normalizedItem && normalizedItem.steps.length > 0) {
+            normalizedItems[normalizedItem.id] = {
+                label: normalizedItem.label,
+                steps: normalizedItem.steps
+            };
+        }
+    });
+
+    const normalized = {
+        item_field: itemField,
+        default_steps: defaultSteps,
+        items: normalizedItems
+    };
+
+    return isTemplateConfigMeaningful(normalized) ? normalized : null;
+}
+
 function normalizeInstructionsPayload(payload) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         return null;
@@ -120,18 +200,15 @@ function normalizeInstructionsPayload(payload) {
 
     const normalized = {};
 
-    Object.entries(payload).forEach(([templateId, config]) => {
+    Object.entries(payload).forEach(([templateId, templateConfig]) => {
         const cleanTemplateId = String(templateId || '').trim();
         if (!/^\d+$/.test(cleanTemplateId)) {
             return;
         }
 
-        const steps = Array.isArray(config && config.steps)
-            ? config.steps.map(normalizeStep).filter(Boolean)
-            : [];
-
-        if (steps.length > 0) {
-            normalized[cleanTemplateId] = { steps };
+        const normalizedTemplateConfig = normalizeTemplateConfig(templateConfig);
+        if (normalizedTemplateConfig) {
+            normalized[cleanTemplateId] = normalizedTemplateConfig;
         }
     });
 
@@ -155,6 +232,118 @@ function readInstructionsFile() {
         console.error('Error leyendo instructions.json:', error.message);
         return {};
     }
+}
+
+function isTrue(value) {
+    return value === true || value === 'true';
+}
+
+async function fetchSdp(relativePath, inputData) {
+    const url = new URL(`${SDP_API_BASE}${relativePath}`);
+    if (inputData) {
+        url.searchParams.set('input_data', JSON.stringify(inputData));
+    }
+
+    const response = await axios.get(url.toString(), {
+        headers: { authtoken: SDP_API_KEY },
+        httpsAgent: SDP_AGENT
+    });
+
+    return response.data;
+}
+
+function extractFieldNamesFromLayouts(layouts) {
+    const seen = new Set();
+    const fields = [];
+
+    (layouts || []).forEach(layout => {
+        (layout.sections || []).forEach(section => {
+            (section.fields || []).forEach(field => {
+                const fieldName = sanitizeFieldName(field.name);
+                if (!fieldName || seen.has(fieldName)) {
+                    return;
+                }
+
+                seen.add(fieldName);
+                fields.push({
+                    name: fieldName,
+                    layout_name: sanitizeText(layout.name || '')
+                });
+            });
+        });
+    });
+
+    return fields;
+}
+
+function mapTemplateDetails(template) {
+    const allFields = extractFieldNamesFromLayouts(template.layouts || []);
+    const udfFields = allFields.filter(field => /^udf_\d+$/i.test(field.name));
+
+    return {
+        id: String(template.id || ''),
+        name: sanitizeText(template.name),
+        is_service_template: Boolean(template.is_service_template),
+        fields: allFields,
+        udf_fields: udfFields,
+        request: template.request || {}
+    };
+}
+
+async function fetchAllActiveItems() {
+    const items = [];
+    let startIndex = 1;
+    let hasMoreRows = true;
+
+    while (hasMoreRows) {
+        const payload = {
+            list_info: {
+                row_count: 500,
+                start_index: startIndex,
+                sort_field: 'id',
+                sort_order: 'asc',
+                get_total_count: true
+            }
+        };
+
+        const data = await fetchSdp('/items', payload);
+        const pageItems = Array.isArray(data.items) ? data.items : [];
+
+        pageItems.forEach(item => {
+            if (item.deleted) {
+                return;
+            }
+
+            const id = String(item.id || '').trim();
+            if (!/^\d+$/.test(id)) {
+                return;
+            }
+
+            items.push({
+                id,
+                name: sanitizeText(item.name),
+                description: sanitizeText(item.description),
+                subcategory: item.subcategory
+                    ? {
+                        id: String(item.subcategory.id || '').trim(),
+                        name: sanitizeText(item.subcategory.name)
+                    }
+                    : null
+            });
+        });
+
+        hasMoreRows = isTrue(data.list_info && data.list_info.has_more_rows);
+        if (!hasMoreRows || pageItems.length === 0) {
+            break;
+        }
+
+        startIndex += pageItems.length;
+    }
+
+    return items.sort((a, b) => {
+        const byName = a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
+        return byName !== 0 ? byName : Number(a.id) - Number(b.id);
+    });
 }
 
 const storage = multer.diskStorage({
@@ -200,27 +389,51 @@ app.get('/modal_styles.css', (req, res) => {
 app.get('/api/admin/dashboard', requireAdminAuth, async (req, res) => {
     try {
         const localData = readInstructionsFile();
-        const baseUrl = 'https://127.0.0.1:8080/api/v3/request_templates';
-        const agent = new https.Agent({ rejectUnauthorized: false });
-        const finalUrl = `${baseUrl}?input_data={"list_info":{"row_count":500}}`;
-
-        const response = await axios.get(finalUrl, {
-            headers: { authtoken: SDP_API_KEY },
-            httpsAgent: agent
+        const data = await fetchSdp('/request_templates', {
+            list_info: { row_count: 500 }
         });
 
-        const sdpTemplates = response.data.request_templates || [];
+        const sdpTemplates = Array.isArray(data.request_templates) ? data.request_templates : [];
         const dashboardData = sdpTemplates.map(tpl => ({
             id: tpl.id,
             name: tpl.name,
             is_service: tpl.is_service_template,
-            has_config: Boolean(localData[tpl.id])
+            has_config: Boolean(localData[String(tpl.id)])
         }));
 
         res.json(dashboardData);
     } catch (error) {
-        console.error('Error SDP:', error.message);
+        console.error('Error SDP dashboard:', error.message);
         res.status(500).json({ error: 'Error conectando a SDP' });
+    }
+});
+
+app.get('/api/admin/items', requireAdminAuth, async (req, res) => {
+    try {
+        const items = await fetchAllActiveItems();
+        res.json(items);
+    } catch (error) {
+        console.error('Error SDP items:', error.message);
+        res.status(500).json({ error: 'No se pudieron obtener los articulos desde SDP.' });
+    }
+});
+
+app.get('/api/admin/templates/:templateId/details', requireAdminAuth, async (req, res) => {
+    try {
+        const templateId = String(req.params.templateId || '').trim();
+        if (!/^\d+$/.test(templateId)) {
+            return res.status(400).json({ error: 'Template ID invalido.' });
+        }
+
+        const data = await fetchSdp(`/request_templates/${templateId}`);
+        if (!data.request_template) {
+            return res.status(404).json({ error: 'Template no encontrado.' });
+        }
+
+        res.json(mapTemplateDetails(data.request_template));
+    } catch (error) {
+        console.error('Error SDP template details:', error.message);
+        res.status(500).json({ error: 'No se pudo obtener el detalle de la plantilla.' });
     }
 });
 

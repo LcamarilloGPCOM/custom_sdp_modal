@@ -6,382 +6,487 @@
     <title>Gestor de Modales SDP</title>
     <link rel="stylesheet" href="/editor-api/modal_styles.css">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; color: #333; }
-        header { background-color: #0b1e3b; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        header h1 { margin: 0; font-size: 1.2rem; font-weight: 500; }
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #333; }
+        .container { max-width: 1360px; margin: 24px auto; padding: 0 16px; }
+        .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.1); padding: 20px; margin-bottom: 20px; }
         .hidden { display: none !important; }
-
-        .search-bar { width: 100%; padding: 12px; border: 1px solid #dfe3e8; border-radius: 6px; margin-bottom: 20px; box-sizing: border-box; }
+        .search-bar, select, input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; }
+        textarea { min-height: 90px; resize: vertical; }
         table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #666; font-size: 0.9rem; }
-        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        tr:hover { background-color: #f9fafb; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
         .badge-success { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
         .badge-missing { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
-
-        .btn { cursor: pointer; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; transition: 0.2s; font-size: 0.9rem; }
-        .btn-primary { background-color: #0069d9; color: white; }
-        .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-danger { background-color: #dc3545; color: white; font-size: 0.8rem; }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-info { background-color: #17a2b8; color: white; }
+        .btn { cursor: pointer; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 600; }
+        .btn-primary { background: #0069d9; color: #fff; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+        .btn-success { background: #28a745; color: #fff; }
+        .btn-danger { background: #dc3545; color: #fff; }
         .btn-outline { background: transparent; border: 1px solid #0069d9; color: #0069d9; }
-
-        .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        .editor-actions { display: flex; gap: 10px; }
-        .step-item { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin-bottom: 15px; position: relative; }
-        .step-count { position: absolute; top: -10px; left: -10px; background: #0b1e3b; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #444; }
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
-        textarea { resize: vertical; min-height: 80px; }
-
-        .current-image-container { margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .img-editor-preview { max-height: 80px; max-width: 150px; border: 1px solid #ccc; background: white; }
+        .btn-sm { padding: 6px 10px; font-size: 12px; }
+        .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+        .stack { display: grid; gap: 14px; }
+        .items-box { max-height: 260px; overflow: auto; display: grid; gap: 8px; }
+        .item-row { border: 1px solid #e1e7ef; border-radius: 8px; padding: 10px; background: #fbfcfe; }
+        .item-row.active { border-color: #0069d9; background: #f5faff; }
+        .item-title { font-weight: 700; font-size: 14px; }
+        .item-meta { font-size: 12px; color: #666; margin-top: 4px; }
+        .step-item { position: relative; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .step-count { position: absolute; top: -10px; left: -10px; width: 30px; height: 30px; border-radius: 50%; background: #0b1e3b; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .note { padding: 10px 12px; border-radius: 6px; background: #fcf8e3; border: 1px solid #faebcc; color: #8a6d3b; }
+        .scope { display: inline-block; background: #eef6ff; color: #0b4f95; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+        .image-box { margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 6px; display: flex; justify-content: space-between; gap: 12px; }
+        .image-box img { max-height: 80px; max-width: 150px; border: 1px solid #ccc; background: #fff; }
+        .empty { padding: 14px; text-align: center; border: 1px dashed #ccd3db; border-radius: 8px; color: #667; }
         #preview-container .sdp-modal-backdrop { z-index: 99999; }
+        @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
-
-    <div id="view-dashboard" class="active">
+    <div id="view-dashboard">
         <div class="card">
             <h2 style="margin-top:0;">Plantillas Disponibles</h2>
             <input type="text" id="searchInput" class="search-bar" placeholder="Buscar plantilla por nombre o ID..." onkeyup="filterTable()">
-            <div id="tableContainer">
-                <p>Cargando plantillas...</p>
-            </div>
+            <div id="tableContainer"><p>Cargando plantillas...</p></div>
         </div>
     </div>
 
     <div id="view-editor" class="hidden">
         <button class="btn btn-secondary" onclick="showDashboard()">&larr; Volver</button>
         <br><br>
-
-        <div class="card">
-            <div class="editor-header">
+        <div class="layout">
+            <div class="card stack">
                 <div>
-                    <h2 id="editorTitle" style="margin:0;">Editando Plantilla</h2>
-                    <small>ID: <span id="displayTemplateId"></span></small>
+                    <strong>Campo de Item</strong>
+                    <div style="font-size:12px;color:#666;margin:6px 0 8px;">Selecciona el campo UDF que representa "Articulo (Falla presentada)".</div>
+                    <select id="itemFieldSelect" onchange="updateItemField(this.value)"></select>
+                    <div id="fieldHelp" style="font-size:12px;color:#666;margin-top:8px;"></div>
                 </div>
-                <div class="editor-actions">
-                    <button class="btn btn-info" onclick="startPreview()">Vista Previa</button>
-                    <button class="btn btn-success" onclick="saveData()">Guardar</button>
+                <div>
+                    <strong>Modal General</strong>
+                    <div style="font-size:12px;color:#666;margin:6px 0 8px;">Se usa como respaldo cuando el articulo no tenga modal propio.</div>
+                    <button class="btn btn-outline" style="width:100%;" onclick="selectDefaultTarget()">Editar modal general</button>
+                </div>
+                <div>
+                    <strong>Articulos configurados</strong>
+                    <div id="configuredItems" class="items-box"></div>
+                </div>
+                <div>
+                    <strong>Agregar o editar articulo</strong>
+                    <input type="text" id="itemSearchInput" class="search-bar" placeholder="Buscar articulo..." oninput="renderItemPicker()" style="margin-top:8px;">
+                    <div id="availableItems" class="items-box" style="margin-top:10px;"></div>
                 </div>
             </div>
 
-            <input type="hidden" id="currentTemplateId">
-            <div id="stepsContainer"></div>
-
-            <button class="btn btn-outline" style="width:100%; border-style:dashed; margin-top: 20px;" onclick="addStep()">+ Agregar Nuevo Paso</button>
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1px solid #eee;padding-bottom:16px;margin-bottom:16px;">
+                    <div>
+                        <h2 id="editorTitle" style="margin:0;">Editando Plantilla</h2>
+                        <div style="font-size:13px;color:#666;margin-top:4px;">ID: <span id="displayTemplateId"></span></div>
+                        <div style="margin-top:10px;"><span id="scopeLabel" class="scope">Modal general</span></div>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button class="btn btn-outline" onclick="startPreview()">Vista Previa</button>
+                        <button class="btn btn-success" onclick="saveData()">Guardar</button>
+                    </div>
+                </div>
+                <input type="hidden" id="currentTemplateId">
+                <div id="scopeNote" class="note" style="margin-bottom:16px;"></div>
+                <div id="stepsContainer"></div>
+                <button class="btn btn-outline" style="width:100%;border-style:dashed;" onclick="addStep()">+ Agregar Nuevo Paso</button>
+            </div>
         </div>
     </div>
-
 </div>
 
 <div id="preview-container"></div>
 
 <script>
-    const ADMIN_API_BASE = '/editor-api/api/admin';
-    let globalInstructions = {};
-    let allTemplates = [];
-    let currentSteps = [];
-    let previewSteps = [];
-    let previewIndex = 0;
+const ADMIN_API_BASE = '/editor-api/api/admin';
+const EMPTY_STEP = () => ({ title: '', content: '', image: '' });
+let globalInstructions = {};
+let allTemplates = [];
+let allItems = [];
+let templateDetailsCache = {};
+let currentTemplateConfig = { item_field: '', default_steps: [], items: {} };
+let currentTemplateMeta = null;
+let activeTarget = { type: 'default', itemId: null };
+let previewSteps = [];
+let previewIndex = 0;
 
+loadDashboard();
+
+function normalizeSteps(steps) {
+    return Array.isArray(steps) ? steps.map(step => ({
+        title: String(step && step.title || ''),
+        content: String(step && step.content || ''),
+        image: String(step && step.image || '')
+    })) : [];
+}
+
+function normalizeTemplateConfig(config) {
+    const normalized = { item_field: '', default_steps: [], items: {} };
+    if (!config || typeof config !== 'object') return normalized;
+    normalized.item_field = String(config.item_field || '').trim();
+    normalized.default_steps = normalizeSteps(Array.isArray(config.default_steps) ? config.default_steps : config.steps);
+    Object.entries(config.items || {}).forEach(([itemId, itemConfig]) => {
+        normalized.items[String(itemId)] = { label: String(itemConfig && itemConfig.label || ''), steps: normalizeSteps(itemConfig && itemConfig.steps) };
+    });
+    return normalized;
+}
+
+async function loadDashboard() {
+    try {
+        const [instRes, dashRes] = await Promise.all([
+            fetch(`${ADMIN_API_BASE}/instructions`),
+            fetch(`${ADMIN_API_BASE}/dashboard`)
+        ]);
+        if (!instRes.ok || !dashRes.ok) throw new Error('No se pudo cargar el editor.');
+        globalInstructions = await instRes.json();
+        allTemplates = await dashRes.json();
+        renderTable(allTemplates);
+    } catch (error) {
+        document.getElementById('tableContainer').innerHTML = `<p style="color:red">${escapeHtml(error.message)}</p>`;
+    }
+}
+
+async function ensureItemsLoaded() {
+    if (allItems.length) return;
+    const res = await fetch(`${ADMIN_API_BASE}/items`);
+    if (!res.ok) throw new Error('No se pudieron cargar los articulos.');
+    allItems = await res.json();
+}
+
+async function ensureTemplateDetails(templateId) {
+    if (templateDetailsCache[templateId]) return templateDetailsCache[templateId];
+    const res = await fetch(`${ADMIN_API_BASE}/templates/${templateId}/details`);
+    if (!res.ok) throw new Error('No se pudo cargar el detalle de la plantilla.');
+    templateDetailsCache[templateId] = await res.json();
+    return templateDetailsCache[templateId];
+}
+
+function renderTable(templates) {
+    if (!templates.length) {
+        document.getElementById('tableContainer').innerHTML = '<p>No se encontraron plantillas.</p>';
+        return;
+    }
+    let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Estado</th><th>Accion</th></tr></thead><tbody>';
+    templates.forEach(tpl => {
+        const hasConfig = !!globalInstructions[tpl.id];
+        const badge = hasConfig ? '<span class="badge badge-success">Configurado</span>' : '<span class="badge badge-missing">Sin Modal</span>';
+        const btnClass = hasConfig ? 'btn-outline' : 'btn-primary';
+        html += `<tr><td><code>${tpl.id}</code></td><td><strong>${escapeHtml(tpl.name)}</strong></td><td>${badge}</td><td><button class="btn ${btnClass}" onclick="openEditor(${tpl.id}, '${escapeJsString(tpl.name)}')">${hasConfig ? 'Editar' : 'Crear'}</button></td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById('tableContainer').innerHTML = html;
+}
+
+function filterTable() {
+    const term = document.getElementById('searchInput').value.toLowerCase();
+    renderTable(allTemplates.filter(t => t.name.toLowerCase().includes(term) || String(t.id).includes(term)));
+}
+
+async function openEditor(id, name) {
+    document.getElementById('view-dashboard').classList.add('hidden');
+    document.getElementById('view-editor').classList.remove('hidden');
+    document.getElementById('editorTitle').innerText = name;
+    document.getElementById('displayTemplateId').innerText = id;
+    document.getElementById('currentTemplateId').value = id;
+    document.getElementById('stepsContainer').innerHTML = '<div class="empty">Cargando informacion de la plantilla y articulos...</div>';
+
+    try {
+        currentTemplateMeta = await ensureTemplateDetails(id);
+        await ensureItemsLoaded();
+        currentTemplateConfig = normalizeTemplateConfig(globalInstructions[id]);
+        activeTarget = { type: 'default', itemId: null };
+        renderFieldSelector();
+        renderSidebar();
+        renderSteps();
+    } catch (error) {
+        document.getElementById('stepsContainer').innerHTML = `<div class="empty" style="color:#c53030;">${escapeHtml(error.message)}</div>`;
+    }
+}
+
+function showDashboard() {
+    syncActiveStepsFromDom();
+    document.getElementById('view-editor').classList.add('hidden');
+    document.getElementById('view-dashboard').classList.remove('hidden');
     loadDashboard();
+}
 
-    async function loadDashboard() {
-        try {
-            const [resInst, resDash] = await Promise.all([
-                fetch(`${ADMIN_API_BASE}/instructions`),
-                fetch(`${ADMIN_API_BASE}/dashboard`)
-            ]);
+function renderFieldSelector() {
+    const udfFields = currentTemplateMeta && Array.isArray(currentTemplateMeta.udf_fields) ? currentTemplateMeta.udf_fields : [];
+    let html = '<option value="">Sin campo especifico</option>';
+    udfFields.forEach(field => {
+        html += `<option value="${escapeHtml(field.name)}" ${currentTemplateConfig.item_field === field.name ? 'selected' : ''}>${escapeHtml(field.name)}</option>`;
+    });
+    document.getElementById('itemFieldSelect').innerHTML = html;
+    document.getElementById('fieldHelp').innerText = udfFields.length
+        ? `Campos UDF detectados: ${udfFields.map(field => field.name).join(', ')}`
+        : 'No se detectaron campos udf_* en el layout del template.';
+}
 
-            if (!resInst.ok || !resDash.ok) {
-                throw new Error('No se pudo cargar el editor.');
-            }
+function updateItemField(value) {
+    currentTemplateConfig.item_field = String(value || '').trim();
+    renderScope();
+}
 
-            globalInstructions = await resInst.json();
-            allTemplates = await resDash.json();
-            renderTable(allTemplates);
-        } catch (error) {
-            document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error de conexion: ${escapeHtml(error.message)}</p>`;
-        }
+function getItemById(itemId) {
+    return allItems.find(item => item.id === String(itemId));
+}
+
+function ensureItemConfig(itemId) {
+    const id = String(itemId);
+    if (!currentTemplateConfig.items[id]) {
+        const item = getItemById(id);
+        currentTemplateConfig.items[id] = { label: item ? item.name : `Item ${id}`, steps: [] };
     }
+    if (!currentTemplateConfig.items[id].steps.length) currentTemplateConfig.items[id].steps.push(EMPTY_STEP());
+    return currentTemplateConfig.items[id];
+}
 
-    function renderTable(templates) {
-        if (templates.length === 0) {
-            document.getElementById('tableContainer').innerHTML = '<p>No se encontraron plantillas.</p>';
-            return;
-        }
+function getActiveSteps() {
+    if (activeTarget.type === 'item') return ensureItemConfig(activeTarget.itemId).steps;
+    if (!currentTemplateConfig.default_steps.length) currentTemplateConfig.default_steps.push(EMPTY_STEP());
+    return currentTemplateConfig.default_steps;
+}
 
-        let html = '<table><thead><tr><th style="width:80px">ID</th><th>Nombre</th><th style="width:120px">Estado</th><th style="width:100px">Accion</th></tr></thead><tbody>';
-        templates.forEach(tpl => {
-            const hasConfig = !!globalInstructions[tpl.id];
-            const badge = hasConfig ? '<span class="badge badge-success">Configurado</span>' : '<span class="badge badge-missing">Sin Modal</span>';
-            const btnClass = hasConfig ? 'btn-outline' : 'btn-primary';
-            const btnText = hasConfig ? 'Editar' : 'Crear';
-            html += `<tr><td><code>${tpl.id}</code></td><td><strong>${escapeHtml(tpl.name)}</strong></td><td>${badge}</td><td><button class="btn ${btnClass}" onclick="openEditor(${tpl.id}, '${escapeJsString(tpl.name)}')">${btnText}</button></td></tr>`;
-        });
-        html += '</tbody></table>';
-        document.getElementById('tableContainer').innerHTML = html;
+function renderSidebar() {
+    renderConfiguredItems();
+    renderItemPicker();
+    renderScope();
+}
+
+function renderScope() {
+    document.getElementById('scopeLabel').innerText = activeTarget.type === 'item'
+        ? `Articulo especifico (#${activeTarget.itemId})`
+        : 'Modal general';
+    document.getElementById('scopeNote').innerText = activeTarget.type === 'item' && !currentTemplateConfig.item_field
+        ? 'Estas editando un modal por articulo, pero aun no has seleccionado el campo del template que representa "Articulo (Falla presentada)".'
+        : activeTarget.type === 'item'
+            ? 'Este modal se mostrara cuando en SDP se seleccione este articulo.'
+            : 'Este modal general se usa como respaldo cuando el articulo no tenga uno propio.';
+}
+
+function renderConfiguredItems() {
+    const container = document.getElementById('configuredItems');
+    const entries = Object.entries(currentTemplateConfig.items)
+        .filter(([, config]) => config.steps.some(isStepMeaningful))
+        .sort((a, b) => (a[1].label || '').localeCompare(b[1].label || '', 'es', { sensitivity: 'base' }));
+    if (!entries.length) {
+        container.innerHTML = '<div class="empty">Aun no hay articulos configurados.</div>';
+        return;
     }
-
-    function filterTable() {
-        const term = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allTemplates.filter(t => t.name.toLowerCase().includes(term) || t.id.toString().includes(term));
-        renderTable(filtered);
-    }
-
-    function openEditor(id, name) {
-        document.getElementById('view-dashboard').classList.add('hidden');
-        document.getElementById('view-editor').classList.remove('hidden');
-        document.getElementById('currentTemplateId').value = id;
-        document.getElementById('displayTemplateId').innerText = id;
-        document.getElementById('editorTitle').innerText = name;
-
-        if (globalInstructions[id] && globalInstructions[id].steps) {
-            currentSteps = JSON.parse(JSON.stringify(globalInstructions[id].steps));
-        } else {
-            currentSteps = [{ title: '', content: '', image: '' }];
-        }
-
-        renderSteps();
-    }
-
-    function showDashboard() {
-        document.getElementById('view-editor').classList.add('hidden');
-        document.getElementById('view-dashboard').classList.remove('hidden');
-        loadDashboard();
-    }
-
-    function renderSteps() {
-        const container = document.getElementById('stepsContainer');
-        container.innerHTML = '';
-
-        currentSteps.forEach((step, index) => {
-            let imgHtml = '';
-            if (step.image) {
-                const imgPath = step.image.startsWith('/') ? step.image : '/' + step.image;
-                imgHtml = `
-                    <div class="current-image-container">
-                        <div>
-                            <strong>Imagen actual:</strong><br>
-                            <small style="word-break: break-all;">${escapeHtml(step.image)}</small>
-                        </div>
-                        <div style="text-align:right;">
-                            <img src="${imgPath}" class="img-editor-preview" alt="Vista previa">
-                            <br>
-                            <button class="btn btn-danger" style="margin-top:5px; padding:4px 8px; font-size:0.8rem;" onclick="removeImage(${index})">Quitar Imagen</button>
-                        </div>
-                    </div>`;
-            }
-
-            const stepHTML = `
-                <div class="step-item" data-step-index="${index}">
-                    <div class="step-count">${index + 1}</div>
-                    <div style="text-align:right;"><button class="btn btn-danger" onclick="removeStep(${index})">Eliminar Paso</button></div>
-
-                    <label>Titulo del Paso</label>
-                    <input class="js-step-title" type="text" value="${escapeHtml(step.title || '')}" placeholder="Ej: Confirmacion" oninput="updateStep(${index}, 'title', this.value)">
-
-                    <label>Contenido (HTML permitido)</label>
-                    <textarea class="js-step-content" placeholder="Instrucciones..." oninput="updateStep(${index}, 'content', this.value)">${escapeHtml(step.content || '')}</textarea>
-
-                    <label>Imagen de ayuda</label>
-                    ${imgHtml}
-                    <input type="file" id="fileInput-${index}" style="margin-top:10px;" onchange="uploadImage(this, ${index})">
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', stepHTML);
-        });
-    }
-
-    function addStep() {
-        currentSteps.push({ title: '', content: '', image: '' });
-        renderSteps();
-    }
-
-    function updateStep(index, field, value) {
-        currentSteps[index][field] = value;
-    }
-
-    function removeStep(index) {
-        if (confirm('Eliminar este paso?')) {
-            currentSteps.splice(index, 1);
-            renderSteps();
-        }
-    }
-
-    function removeImage(index) {
-        currentSteps[index].image = '';
-        const fileInput = document.getElementById(`fileInput-${index}`);
-        if (fileInput) fileInput.value = '';
-        renderSteps();
-    }
-
-    async function uploadImage(input, index) {
-        if (!input.files[0]) return;
-
-        const formData = new FormData();
-        formData.append('image', input.files[0]);
-
-        try {
-            input.disabled = true;
-            const res = await fetch(`${ADMIN_API_BASE}/upload`, { method: 'POST', body: formData });
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}));
-                throw new Error(errorData.error || 'No se pudo subir la imagen.');
-            }
-
-            const data = await res.json();
-            currentSteps[index].image = data.path;
-            renderSteps();
-        } catch (error) {
-            input.disabled = false;
-            alert(error.message || 'Error al subir imagen.');
-        }
-    }
-
-    function syncStepsFromDom() {
-        document.querySelectorAll('#stepsContainer .step-item').forEach(stepEl => {
-            const index = Number(stepEl.dataset.stepIndex);
-            if (!currentSteps[index]) return;
-
-            const titleInput = stepEl.querySelector('.js-step-title');
-            const contentInput = stepEl.querySelector('.js-step-content');
-
-            currentSteps[index].title = titleInput ? titleInput.value : currentSteps[index].title;
-            currentSteps[index].content = contentInput ? contentInput.value : currentSteps[index].content;
-        });
-    }
-
-    async function saveData() {
-        syncStepsFromDom();
-
-        const id = document.getElementById('currentTemplateId').value;
-        if (!id) return;
-
-        const validSteps = currentSteps.filter(s => s.title.trim() !== '' || s.content.trim() !== '' || s.image !== '');
-        if (validSteps.length === 0 && !confirm('Se guardara una plantilla vacia (desactivara el modal). Continuar?')) return;
-
-        if (validSteps.length > 0) globalInstructions[id] = { steps: validSteps };
-        else delete globalInstructions[id];
-
-        try {
-            const response = await fetch(`${ADMIN_API_BASE}/instructions`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(globalInstructions)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Error al guardar en servidor.');
-            }
-
-            alert('Cambios guardados.');
-            showDashboard();
-        } catch (error) {
-            alert(error.message || 'Error al guardar en servidor.');
-        }
-    }
-
-    function startPreview() {
-        syncStepsFromDom();
-        previewSteps = currentSteps.filter(s => s.title || s.content || s.image);
-        if (previewSteps.length === 0) return alert('No hay pasos con contenido para previsualizar.');
-
-        previewIndex = 0;
-        const modalHTML = `
-            <div id="sdpCustomModalPreview" class="sdp-modal-backdrop">
-                <div class="sdp-modal-content">
-                    <div class="sdp-modal-header">
-                        <h2 id="previewTitle" style="margin:0; font-size:18px;"></h2>
-                        <span class="sdp-modal-close" onclick="closePreview()">&times;</span>
-                    </div>
-                    <div class="sdp-modal-body">
-                        <div style="background:#fff3cd; color:#856404; padding:5px; text-align:center; font-size:12px; margin-bottom:10px;">MODO VISTA PREVIA</div>
-                        <div id="previewImageContainer" style="text-align:center; margin-bottom:15px;"></div>
-                        <div id="previewTextContent" style="font-size:14px; color:#333;"></div>
-                    </div>
-                    <div class="sdp-modal-footer">
-                        <div style="float:left; font-size:12px; color:#999; margin-top:5px;">
-                            Paso <span id="previewStepCount"></span> de <span id="previewTotalSteps"></span>
-                        </div>
-                        <button id="previewPrevBtn" class="btn" onclick="changePreviewStep(-1)">Anterior</button>
-                        <button id="previewNextBtn" class="btn btn-primary" onclick="changePreviewStep(1)">Siguiente</button>
-                        <button id="previewFinishBtn" class="btn btn-primary" style="display:none;" onclick="closePreview()">Cerrar Vista Previa</button>
-                    </div>
-                </div>
+    container.innerHTML = entries.map(([itemId, config]) => {
+        const item = getItemById(itemId);
+        const active = activeTarget.type === 'item' && activeTarget.itemId === itemId ? 'active' : '';
+        return `<div class="item-row ${active}">
+            <div class="item-title">${escapeHtml(config.label || ('Item ' + itemId))}</div>
+            <div class="item-meta">ID ${escapeHtml(itemId)}${item && item.subcategory ? ` - ${escapeHtml(item.subcategory.name)}` : ''}</div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+                <button class="btn btn-outline btn-sm" onclick="selectItemTarget('${escapeJsString(itemId)}')">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="removeItemConfig('${escapeJsString(itemId)}')">Quitar</button>
             </div>
-        `;
-        document.getElementById('preview-container').innerHTML = modalHTML;
-        renderPreviewStep();
+        </div>`;
+    }).join('');
+}
+
+function renderItemPicker() {
+    const term = document.getElementById('itemSearchInput').value.trim().toLowerCase();
+    const items = allItems.filter(item => {
+        if (!term) return true;
+        return `${item.id} ${item.name} ${item.subcategory ? item.subcategory.name : ''}`.toLowerCase().includes(term);
+    }).slice(0, term ? 60 : 20);
+    const container = document.getElementById('availableItems');
+    if (!items.length) {
+        container.innerHTML = '<div class="empty">No se encontraron articulos.</div>';
+        return;
     }
+    container.innerHTML = items.map(item => {
+        const exists = !!currentTemplateConfig.items[item.id];
+        return `<div class="item-row">
+            <div class="item-title">${escapeHtml(item.name)}</div>
+            <div class="item-meta">ID ${escapeHtml(item.id)}${item.subcategory ? ` - ${escapeHtml(item.subcategory.name)}` : ''}</div>
+            <div style="margin-top:8px;">
+                <button class="btn ${exists ? 'btn-outline' : 'btn-primary'} btn-sm" onclick="selectItemTarget('${escapeJsString(item.id)}')">${exists ? 'Editar' : 'Crear'}</button>
+            </div>
+        </div>`;
+    }).join('');
+}
 
-    function renderPreviewStep() {
-        const step = previewSteps[previewIndex];
-        document.getElementById('previewTitle').innerText = step.title;
-        document.getElementById('previewTextContent').innerHTML = sanitizeRichHtml(step.content);
-        document.getElementById('previewStepCount').innerText = previewIndex + 1;
-        document.getElementById('previewTotalSteps').innerText = previewSteps.length;
+function selectDefaultTarget() {
+    syncActiveStepsFromDom();
+    activeTarget = { type: 'default', itemId: null };
+    renderSidebar();
+    renderSteps();
+}
 
-        const imgCont = document.getElementById('previewImageContainer');
-        if (step.image) {
-            const imgPath = step.image.startsWith('/') ? step.image : '/' + step.image;
-            imgCont.innerHTML = `<img src="${imgPath}" style="max-width:100%; max-height:300px; border:1px solid #ddd;" alt="Vista previa">`;
-        } else {
-            imgCont.innerHTML = '';
+function selectItemTarget(itemId) {
+    syncActiveStepsFromDom();
+    activeTarget = { type: 'item', itemId: String(itemId) };
+    ensureItemConfig(itemId);
+    renderSidebar();
+    renderSteps();
+}
+
+function removeItemConfig(itemId) {
+    if (!confirm('Se eliminara la configuracion de este articulo. Continuar?')) return;
+    delete currentTemplateConfig.items[String(itemId)];
+    if (activeTarget.type === 'item' && activeTarget.itemId === String(itemId)) activeTarget = { type: 'default', itemId: null };
+    renderSidebar();
+    renderSteps();
+}
+
+function renderSteps() {
+    const steps = getActiveSteps();
+    const container = document.getElementById('stepsContainer');
+    container.innerHTML = steps.map((step, index) => {
+        const imageBox = step.image ? `<div class="image-box"><div><strong>Imagen actual:</strong><br><small>${escapeHtml(step.image)}</small></div><div><img src="${step.image.startsWith('/') ? step.image : '/' + step.image}" alt="Vista previa"><br><button class="btn btn-danger btn-sm" style="margin-top:5px;" onclick="removeImage(${index})">Quitar Imagen</button></div></div>` : '';
+        return `<div class="step-item" data-step-index="${index}">
+            <div class="step-count">${index + 1}</div>
+            <div style="text-align:right;"><button class="btn btn-danger btn-sm" onclick="removeStep(${index})">Eliminar Paso</button></div>
+            <label>Titulo del Paso</label>
+            <input class="js-step-title" type="text" value="${escapeHtml(step.title || '')}" oninput="updateStep(${index}, 'title', this.value)">
+            <label>Contenido (HTML permitido)</label>
+            <textarea class="js-step-content" oninput="updateStep(${index}, 'content', this.value)">${escapeHtml(step.content || '')}</textarea>
+            <label>Imagen de ayuda</label>
+            ${imageBox}
+            <input type="file" id="fileInput-${index}" style="margin-top:10px;" onchange="uploadImage(this, ${index})">
+        </div>`;
+    }).join('');
+}
+
+function updateStep(index, field, value) {
+    getActiveSteps()[index][field] = value;
+}
+
+function addStep() {
+    syncActiveStepsFromDom();
+    getActiveSteps().push(EMPTY_STEP());
+    renderSteps();
+}
+
+function removeStep(index) {
+    if (!confirm('Eliminar este paso?')) return;
+    const steps = getActiveSteps();
+    steps.splice(index, 1);
+    if (!steps.length) steps.push(EMPTY_STEP());
+    renderSteps();
+}
+
+function removeImage(index) {
+    getActiveSteps()[index].image = '';
+    renderSteps();
+}
+
+async function uploadImage(input, index) {
+    if (!input.files[0]) return;
+    const formData = new FormData();
+    formData.append('image', input.files[0]);
+    try {
+        const res = await fetch(`${ADMIN_API_BASE}/upload`, { method: 'POST', body: formData });
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'No se pudo subir la imagen.');
         }
-
-        document.getElementById('previewPrevBtn').style.display = previewIndex === 0 ? 'none' : 'inline-block';
-        const isLast = previewIndex === previewSteps.length - 1;
-        document.getElementById('previewNextBtn').style.display = isLast ? 'none' : 'inline-block';
-        document.getElementById('previewFinishBtn').style.display = isLast ? 'inline-block' : 'none';
+        const data = await res.json();
+        getActiveSteps()[index].image = data.path;
+        renderSteps();
+    } catch (error) {
+        alert(error.message || 'Error al subir imagen.');
     }
+}
 
-    function changePreviewStep(direction) {
-        previewIndex += direction;
-        renderPreviewStep();
-    }
+function syncActiveStepsFromDom() {
+    const steps = getActiveSteps();
+    document.querySelectorAll('#stepsContainer .step-item').forEach(stepEl => {
+        const index = Number(stepEl.dataset.stepIndex);
+        if (!steps[index]) return;
+        steps[index].title = stepEl.querySelector('.js-step-title').value;
+        steps[index].content = stepEl.querySelector('.js-step-content').value;
+    });
+}
 
-    function closePreview() {
-        document.getElementById('preview-container').innerHTML = '';
-    }
+function isStepMeaningful(step) {
+    return Boolean((step.title || '').trim() || (step.content || '').trim() || (step.image || '').trim());
+}
 
-    function escapeHtml(text) {
-        if (!text) return '';
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
+function buildConfigForSave() {
+    const payload = { item_field: String(currentTemplateConfig.item_field || '').trim(), default_steps: normalizeSteps(currentTemplateConfig.default_steps).filter(isStepMeaningful), items: {} };
+    Object.entries(currentTemplateConfig.items).forEach(([itemId, itemConfig]) => {
+        const steps = normalizeSteps(itemConfig.steps).filter(isStepMeaningful);
+        if (steps.length) payload.items[itemId] = { label: String(itemConfig.label || ''), steps };
+    });
+    return payload;
+}
 
-    function escapeJsString(text) {
-        return String(text || '')
-            .replace(/\\/g, '\\\\')
-            .replace(/'/g, "\\'")
-            .replace(/\r/g, ' ')
-            .replace(/\n/g, ' ');
-    }
+function isEmptyConfig(config) {
+    return !config.item_field && !config.default_steps.length && !Object.keys(config.items).length;
+}
 
-    function sanitizeRichHtml(html) {
-        if (!html) return '';
-        return String(html)
-            .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-            .replace(/<\s*(script|style|iframe|object|embed|link|meta)(\s|\/|>)[^>]*>/gi, '')
-            .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-            .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
-            .replace(/\s(href|src)\s*=\s*(['"])\s*data:text\/html[\s\S]*?\2/gi, ' $1="#"');
+async function saveData() {
+    syncActiveStepsFromDom();
+    const templateId = document.getElementById('currentTemplateId').value;
+    const payload = buildConfigForSave();
+    if (isEmptyConfig(payload)) delete globalInstructions[templateId];
+    else globalInstructions[templateId] = payload;
+
+    try {
+        const res = await fetch(`${ADMIN_API_BASE}/instructions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(globalInstructions)
+        });
+        if (!res.ok) throw new Error('Error al guardar en servidor.');
+        alert('Cambios guardados.');
+        showDashboard();
+    } catch (error) {
+        alert(error.message || 'Error al guardar en servidor.');
     }
+}
+
+function startPreview() {
+    syncActiveStepsFromDom();
+    previewSteps = getActiveSteps().filter(isStepMeaningful);
+    if (!previewSteps.length) return alert('No hay pasos con contenido para previsualizar.');
+    previewIndex = 0;
+    document.getElementById('preview-container').innerHTML = `<div id="sdpCustomModalPreview" class="sdp-modal-backdrop"><div class="sdp-modal-content"><div class="sdp-modal-header"><h2 id="previewTitle" style="margin:0;font-size:18px;"></h2><span class="sdp-modal-close" onclick="closePreview()">&times;</span></div><div class="sdp-modal-body"><div style="background:#fff3cd;color:#856404;padding:5px;text-align:center;font-size:12px;margin-bottom:10px;">MODO VISTA PREVIA</div><div id="previewImageContainer" style="text-align:center;margin-bottom:15px;"></div><div id="previewTextContent" style="font-size:14px;color:#333;"></div></div><div class="sdp-modal-footer"><div style="float:left;font-size:12px;color:#999;margin-top:5px;">Paso <span id="previewStepCount"></span> de <span id="previewTotalSteps"></span></div><button id="previewPrevBtn" class="btn" onclick="changePreviewStep(-1)">Anterior</button><button id="previewNextBtn" class="btn btn-primary" onclick="changePreviewStep(1)">Siguiente</button><button id="previewFinishBtn" class="btn btn-primary" style="display:none;" onclick="closePreview()">Cerrar Vista Previa</button></div></div></div>`;
+    renderPreviewStep();
+}
+
+function renderPreviewStep() {
+    const step = previewSteps[previewIndex];
+    document.getElementById('previewTitle').innerText = step.title;
+    document.getElementById('previewTextContent').innerHTML = sanitizeRichHtml(step.content);
+    document.getElementById('previewStepCount').innerText = previewIndex + 1;
+    document.getElementById('previewTotalSteps').innerText = previewSteps.length;
+    document.getElementById('previewImageContainer').innerHTML = step.image ? `<img src="${step.image.startsWith('/') ? step.image : '/' + step.image}" style="max-width:100%;max-height:300px;border:1px solid #ddd;" alt="Vista previa">` : '';
+    document.getElementById('previewPrevBtn').style.display = previewIndex === 0 ? 'none' : 'inline-block';
+    const isLast = previewIndex === previewSteps.length - 1;
+    document.getElementById('previewNextBtn').style.display = isLast ? 'none' : 'inline-block';
+    document.getElementById('previewFinishBtn').style.display = isLast ? 'inline-block' : 'none';
+}
+
+function changePreviewStep(direction) { previewIndex += direction; renderPreviewStep(); }
+function closePreview() { document.getElementById('preview-container').innerHTML = ''; }
+
+function escapeHtml(text) {
+    return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function escapeJsString(text) {
+    return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, ' ').replace(/\n/g, ' ');
+}
+
+function sanitizeRichHtml(html) {
+    return String(html || '')
+        .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|style|iframe|object|embed|link|meta)(\s|\/|>)[^>]*>/gi, '')
+        .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+        .replace(/\s(href|src)\s*=\s*(['"])\s*data:text\/html[\s\S]*?\2/gi, ' $1="#"');
+}
 </script>
-
 </body>
 </html>

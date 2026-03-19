@@ -38,7 +38,6 @@ function injectStyles() {
 
 function normalizeTemplateConfig(config) {
     if (!config || typeof config !== 'object') return null;
-
     return {
         item_field: String(config.item_field || '').trim(),
         default_steps: Array.isArray(config.default_steps) ? config.default_steps : (Array.isArray(config.steps) ? config.steps : []),
@@ -56,11 +55,9 @@ function showInstructionsModal(steps) {
 }
 
 function createModalStructure() {
-    if (document.getElementById('sdpCustomModal')) {
-        document.getElementById('sdpCustomModal').remove();
-    }
+    if (document.getElementById('sdpCustomModal')) document.getElementById('sdpCustomModal').remove();
 
-    const modalHTML = `
+    document.body.insertAdjacentHTML('beforeend', `
         <div id="sdpCustomModal">
             <div class="sdp-modal-content">
                 <div class="sdp-modal-header">
@@ -78,9 +75,8 @@ function createModalStructure() {
                 </div>
             </div>
         </div>
-    `;
+    `);
 
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
     setTimeout(() => {
         const modal = document.getElementById('sdpCustomModal');
         if (modal) modal.classList.add('show');
@@ -92,16 +88,11 @@ function updateModalContent(index) {
     const container = document.getElementById('modalDynamicContent');
     if (!container || !step) return;
 
-    let imageHTML = '';
-    if (step.image) {
-        const cleanPath = step.image.startsWith('/') ? step.image : '/' + step.image;
-        const finalImgUrl = `${MODAL_SERVER_URL}${cleanPath.replace('/custom_modal', '').replace('/editor-api', '')}`;
-        imageHTML = `<div class="sdp-image-container"><img src="${finalImgUrl}" alt="Instruccion"></div>`;
-    }
-
+    const cleanPath = step.image ? (step.image.startsWith('/') ? step.image : '/' + step.image) : '';
+    const finalImgUrl = cleanPath ? `${MODAL_SERVER_URL}${cleanPath.replace('/custom_modal', '').replace('/editor-api', '')}` : '';
     container.innerHTML = `
         <h2>${escapeHtml(step.title)}</h2>
-        ${imageHTML}
+        ${finalImgUrl ? `<div class="sdp-image-container"><img src="${finalImgUrl}" alt="Instruccion"></div>` : ''}
         <div style="margin-top:15px;">${sanitizeRichHtml(step.content)}</div>
     `;
 
@@ -113,39 +104,25 @@ function updateModalContent(index) {
 
 function resolveFieldElement(fieldName) {
     if (!fieldName) return null;
-
-    const selectors = [
-        `[name="${fieldName}"]`,
-        `#${cssEscape(fieldName)}`,
-        `[id$="${fieldName}"]`,
-        `[data-name="${fieldName}"]`,
-        `[data-columnname="${fieldName}"]`
-    ];
-
+    const selectors = [`[name="${fieldName}"]`, `#${cssEscape(fieldName)}`, `[id$="${fieldName}"]`, `[data-name="${fieldName}"]`, `[data-columnname="${fieldName}"]`];
     for (let i = 0; i < selectors.length; i += 1) {
         const found = document.querySelector(selectors[i]);
         if (found) return found;
     }
-
     return null;
 }
 
 function readFieldSelection(fieldEl) {
     if (!fieldEl) return { key: '', id: '', text: '' };
-
-    let id = '';
-    let text = '';
-
     if (fieldEl.tagName === 'SELECT') {
-        id = String(fieldEl.value || '').trim();
+        const id = String(fieldEl.value || '').trim();
         const option = fieldEl.options[fieldEl.selectedIndex];
-        text = option ? String(option.text || '').trim() : id;
-    } else {
-        id = String(fieldEl.value || fieldEl.getAttribute('value') || '').trim();
-        text = String(fieldEl.getAttribute('data-display-value') || fieldEl.dataset && fieldEl.dataset.displayValue || '').trim();
-        if (!text) text = id;
+        const text = option ? String(option.text || '').trim() : id;
+        return { key: `${id}::${text}`.trim(), id, text };
     }
 
+    const id = String(fieldEl.value || fieldEl.getAttribute('value') || '').trim();
+    const text = String(fieldEl.getAttribute('data-display-value') || fieldEl.dataset && fieldEl.dataset.displayValue || '').trim() || id;
     return { key: `${id}::${text}`.trim(), id, text };
 }
 
@@ -161,9 +138,7 @@ function resolveStepsForItem(templateConfig, selection) {
     const normalizedText = normalizeValue(selection.text);
     if (normalizedText) {
         const match = Object.values(templateConfig.items).find(itemConfig => normalizeValue(itemConfig.label) === normalizedText);
-        if (match && Array.isArray(match.steps)) {
-            return match.steps;
-        }
+        if (match && Array.isArray(match.steps)) return match.steps;
     }
 
     return Array.isArray(templateConfig.default_steps) ? templateConfig.default_steps : [];
@@ -178,8 +153,7 @@ function startWatchingItemField(templateId, templateConfig) {
         if (!fieldEl) return;
 
         const selection = readFieldSelection(fieldEl);
-        if (!selection.key || selection.key === '::') return;
-        if (selection.key === lastSelectionKey) return;
+        if (!selection.key || selection.key === '::' || selection.key === lastSelectionKey) return;
 
         const steps = resolveStepsForItem(templateConfig, selection).filter(isMeaningfulStep);
         if (!steps.length) return;
@@ -210,9 +184,7 @@ function initModalFlow(templateId) {
                 return;
             }
 
-            if (defaultSteps.length > 0) {
-                showInstructionsModal(defaultSteps);
-            }
+            if (defaultSteps.length > 0) showInstructionsModal(defaultSteps);
         })
         .catch(err => console.error('SDP-Modal: Error de conexion:', err));
 }
@@ -244,12 +216,7 @@ function closeCustomModal() {
 }
 
 function escapeHtml(text) {
-    return String(text || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 function sanitizeRichHtml(html) {
@@ -268,7 +235,6 @@ function cssEscape(value) {
 (function () {
     const urlParams = new URLSearchParams(window.location.search);
     const templateId = urlParams.get('reqTemplate');
-
     if (!templateId) return;
 
     console.log('SDP-Modal: Detectada plantilla ' + templateId + '. Esperando a SDP...');
