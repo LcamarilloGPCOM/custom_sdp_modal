@@ -3,12 +3,12 @@
  * Version 3.0 - Template + Item aware
  */
 
-const MODAL_SERVER_URL = window.SDP_MODAL_SERVER_URL || 'https://cc.krispykreme.com.mx/editor-api';
+var MODAL_SERVER_URL = window.SDP_MODAL_SERVER_URL || 'https://cc.krispykreme.com.mx/editor-api';
 
-let currentSteps = [];
-let currentStepIndex = 0;
-let lastSelectionKey = '';
-let watchIntervalId = null;
+var currentSteps = [];
+var currentStepIndex = 0;
+var lastSelectionKey = '';
+var watchIntervalId = null;
 
 function resolveCurrentTemplateId() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -47,10 +47,12 @@ function injectStyles() {
 
 function normalizeTemplateConfig(config) {
     if (!config || typeof config !== 'object') return null;
+    const items = config.items && typeof config.items === 'object' ? config.items : {};
+    const itemField = String(config.item_field || '').trim() || (Object.keys(items).length ? 'ITEM' : '');
     return {
-        item_field: String(config.item_field || '').trim(),
+        item_field: itemField,
         default_steps: Array.isArray(config.default_steps) ? config.default_steps : (Array.isArray(config.steps) ? config.steps : []),
-        items: config.items && typeof config.items === 'object' ? config.items : {}
+        items
     };
 }
 
@@ -240,6 +242,11 @@ function initModalFlow(templateId) {
         })
         .catch(err => console.error('SDP-Modal: Error de conexion:', err));
 }
+
+window.initModalFlow = initModalFlow;
+window.closeCustomModal = closeCustomModal;
+window.nextStep = nextStep;
+window.prevStep = prevStep;
 
 function isMeaningfulStep(step) {
     return Boolean((step.title || '').trim() || (step.content || '').trim() || (step.image || '').trim());
