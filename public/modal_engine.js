@@ -1,18 +1,16 @@
 /**
- * SERVICE DESK PLUS - CUSTOM MODAL ENGINE (Krispy Kreme Edition)
- * Versión: 2.0 - Profesional & Responsiva
+ * SERVICE DESK PLUS - CUSTOM MODAL ENGINE
+ * Version 2.1 - Hardened
  */
 
-const MODAL_SERVER_URL = 'https://cc.krispykreme.com.mx/editor-api'; 
+const MODAL_SERVER_URL = window.SDP_MODAL_SERVER_URL || 'https://cc.krispykreme.com.mx/editor-api';
 
 let currentSteps = [];
 let currentStepIndex = 0;
 
-/**
- * Inyecta estilos CSS con la identidad visual de ServiceDesk Plus
- */
 function injectStyles() {
     if (document.getElementById('sdpModalStyles')) return;
+
     const style = document.createElement('style');
     style.id = 'sdpModalStyles';
     style.innerHTML = `
@@ -54,10 +52,6 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-
-/**
- * Carga las instrucciones desde la API y lanza el modal
- */
 function showInstructionsModal(templateId) {
     injectStyles();
     fetch(`${MODAL_SERVER_URL}/api/instructions`)
@@ -69,15 +63,12 @@ function showInstructionsModal(templateId) {
                 createModalStructure();
                 updateModalContent(currentStepIndex);
             } else {
-                console.log('SDP-Modal: No hay configuración para la plantilla ' + templateId);
+                console.log('SDP-Modal: No hay configuracion para la plantilla ' + templateId);
             }
         })
-        .catch(err => console.error('SDP-Modal: Error de conexión:', err));
+        .catch(err => console.error('SDP-Modal: Error de conexion:', err));
 }
 
-/**
- * Crea el esqueleto HTML profesional
- */
 function createModalStructure() {
     if (document.getElementById('sdpCustomModal')) return;
 
@@ -85,11 +76,10 @@ function createModalStructure() {
         <div id="sdpCustomModal">
             <div class="sdp-modal-content">
                 <div class="sdp-modal-header">
-                    <h3 class="sdp-modal-title">Guía de Ayuda al Usuario</h3>
+                    <h3 class="sdp-modal-title">Guia de Ayuda al Usuario</h3>
                     <span class="sdp-modal-close" onclick="closeCustomModal()">&times;</span>
                 </div>
-                <div class="sdp-modal-body" id="modalDynamicContent">
-                    </div>
+                <div class="sdp-modal-body" id="modalDynamicContent"></div>
                 <div class="sdp-modal-footer">
                     <span id="stepCountText">Paso 1 de 1</span>
                     <div class="sdp-modal-actions">
@@ -105,37 +95,31 @@ function createModalStructure() {
     setTimeout(() => document.getElementById('sdpCustomModal').classList.add('show'), 10);
 }
 
-/**
- * Actualiza el contenido (Texto e Imagen) del paso actual
- */
 function updateModalContent(index) {
     const step = currentSteps[index];
     const container = document.getElementById('modalDynamicContent');
-    
+
     let imageHTML = '';
     if (step.image) {
-        let cleanPath = step.image.startsWith('/') ? step.image : '/' + step.image;
-        // Normalización de ruta para servir desde el puerto 3050 correctamente
+        const cleanPath = step.image.startsWith('/') ? step.image : '/' + step.image;
         const finalImgUrl = `${MODAL_SERVER_URL}${cleanPath.replace('/custom_modal', '').replace('/editor-api', '')}`;
-        imageHTML = `<div class="sdp-image-container"><img src="${finalImgUrl}" alt="Instrucción"></div>`;
+        imageHTML = `<div class="sdp-image-container"><img src="${finalImgUrl}" alt="Instruccion"></div>`;
     }
 
     container.innerHTML = `
-        <h2>${step.title}</h2>
+        <h2>${escapeHtml(step.title)}</h2>
         ${imageHTML}
-        <div style="margin-top:15px;">${step.content}</div>
+        <div style="margin-top:15px;">${sanitizeRichHtml(step.content)}</div>
     `;
 
-    // Actualizar Pie de página
     document.getElementById('stepCountText').innerText = `Paso ${index + 1} de ${currentSteps.length}`;
-    
-    // Control de Botones
+
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const finishBtn = document.getElementById('finishBtn');
 
     prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
-    
+
     if (index === currentSteps.length - 1) {
         nextBtn.style.display = 'none';
         finishBtn.style.display = 'inline-block';
@@ -159,9 +143,6 @@ function prevStep() {
     }
 }
 
-/**
- * Cierra el modal con animación de salida
- */
 function closeCustomModal() {
     const modal = document.getElementById('sdpCustomModal');
     if (modal) {
@@ -169,24 +150,42 @@ function closeCustomModal() {
         setTimeout(() => modal.remove(), 300);
     }
 }
-// AUTO-DETECCIÓN DE PLANTILLA EN SDP (Versión reforzada)
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function sanitizeRichHtml(html) {
+    if (!html) return '';
+    return String(html)
+        .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|style|iframe|object|embed|link|meta)(\s|\/|>)[^>]*>/gi, '')
+        .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+        .replace(/\s(href|src)\s*=\s*(['"])\s*data:text\/html[\s\S]*?\2/gi, ' $1="#"');
+}
+
 (function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const templateId = urlParams.get('reqTemplate'); 
+    const templateId = urlParams.get('reqTemplate');
 
     if (templateId) {
-        console.log("SDP-Modal: Detectada plantilla " + templateId + ". Esperando a SDP...");
-        
-        // Usamos un intervalo para verificar si el cuerpo de la página ya existe
+        console.log('SDP-Modal: Detectada plantilla ' + templateId + '. Esperando a SDP...');
+
         const checkExist = setInterval(function() {
-           if (document.body) {
-              clearInterval(checkExist);
-              // Damos 3 segundos extra para que SDP cargue sus scripts internos
-              setTimeout(() => {
-                  console.log("SDP-Modal: Lanzando modal ahora.");
-                  showInstructionsModal(templateId);
-              }, 500); 
-           }
+            if (document.body) {
+                clearInterval(checkExist);
+                setTimeout(() => {
+                    console.log('SDP-Modal: Lanzando modal ahora.');
+                    showInstructionsModal(templateId);
+                }, 500);
+            }
         }, 100);
     }
 })();

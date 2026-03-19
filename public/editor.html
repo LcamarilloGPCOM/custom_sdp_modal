@@ -6,15 +6,13 @@
     <title>Gestor de Modales SDP</title>
     <link rel="stylesheet" href="/editor-api/modal_styles.css">
     <style>
-        /* Estilos propios del Editor (no afectan al modal) */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; color: #333; }
         header { background-color: #0b1e3b; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         header h1 { margin: 0; font-size: 1.2rem; font-weight: 500; }
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
         .card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
         .hidden { display: none !important; }
-        
-        /* Dashboard & Tablas */
+
         .search-bar { width: 100%; padding: 12px; border: 1px solid #dfe3e8; border-radius: 6px; margin-bottom: 20px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #666; font-size: 0.9rem; }
@@ -24,30 +22,25 @@
         .badge-success { background: #e6fffa; color: #047481; border: 1px solid #b2f5ea; }
         .badge-missing { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
 
-        /* Botones del Editor */
         .btn { cursor: pointer; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 500; transition: 0.2s; font-size: 0.9rem; }
         .btn-primary { background-color: #0069d9; color: white; }
         .btn-secondary { background-color: #6c757d; color: white; }
         .btn-danger { background-color: #dc3545; color: white; font-size: 0.8rem; }
         .btn-success { background-color: #28a745; color: white; }
-        .btn-info { background-color: #17a2b8; color: white; } /* Nuevo para preview */
+        .btn-info { background-color: #17a2b8; color: white; }
         .btn-outline { background: transparent; border: 1px solid #0069d9; color: #0069d9; }
 
-        /* Formulario del Editor */
         .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         .editor-actions { display: flex; gap: 10px; }
         .step-item { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin-bottom: 15px; position: relative; }
         .step-count { position: absolute; top: -10px; left: -10px; background: #0b1e3b; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        
+
         label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; color: #444; }
         input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
         textarea { resize: vertical; min-height: 80px; }
-        
-        /* Estilos para la imagen dentro del editor */
-        .current-image-container { margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; }
-        .img-editor-preview { max-height: 80px; max-width: 150px; border: 1px solid #ccc; background: white; }
 
-        /* Ajuste para que el modal de preview se vea bien sobre el editor */
+        .current-image-container { margin-top: 10px; padding: 10px; background: #e9ecef; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .img-editor-preview { max-height: 80px; max-width: 150px; border: 1px solid #ccc; background: white; }
         #preview-container .sdp-modal-backdrop { z-index: 99999; }
     </style>
 </head>
@@ -57,7 +50,7 @@
     <div id="view-dashboard" class="active">
         <div class="card">
             <h2 style="margin-top:0;">Plantillas Disponibles</h2>
-            <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Buscar plantilla por nombre o ID..." onkeyup="filterTable()">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Buscar plantilla por nombre o ID..." onkeyup="filterTable()">
             <div id="tableContainer">
                 <p>Cargando plantillas...</p>
             </div>
@@ -65,9 +58,9 @@
     </div>
 
     <div id="view-editor" class="hidden">
-        <button class="btn btn-secondary" onclick="showDashboard()">← Volver</button>
+        <button class="btn btn-secondary" onclick="showDashboard()">&larr; Volver</button>
         <br><br>
-        
+
         <div class="card">
             <div class="editor-header">
                 <div>
@@ -75,11 +68,11 @@
                     <small>ID: <span id="displayTemplateId"></span></small>
                 </div>
                 <div class="editor-actions">
-                    <button class="btn btn-info" onclick="startPreview()">👁️ Vista Previa</button>
-                    <button class="btn btn-success" onclick="saveData()">💾 Guardar</button>
+                    <button class="btn btn-info" onclick="startPreview()">Vista Previa</button>
+                    <button class="btn btn-success" onclick="saveData()">Guardar</button>
                 </div>
             </div>
-            
+
             <input type="hidden" id="currentTemplateId">
             <div id="stepsContainer"></div>
 
@@ -92,48 +85,49 @@
 <div id="preview-container"></div>
 
 <script>
-    // --- VARIABLES GLOBALES ---
+    const ADMIN_API_BASE = '/editor-api/api/admin';
     let globalInstructions = {};
     let allTemplates = [];
     let currentSteps = [];
-    // Variables para el preview
     let previewSteps = [];
     let previewIndex = 0;
 
-    // INICIAR
     loadDashboard();
 
-    // ===========================
-    // FUNCIONES DEL DASHBOARD
-    // ===========================
     async function loadDashboard() {
         try {
             const [resInst, resDash] = await Promise.all([
-                fetch('/editor-api/api/instructions'),
-                fetch('/editor-api/api/dashboard')
+                fetch(`${ADMIN_API_BASE}/instructions`),
+                fetch(`${ADMIN_API_BASE}/dashboard`)
             ]);
+
+            if (!resInst.ok || !resDash.ok) {
+                throw new Error('No se pudo cargar el editor.');
+            }
+
             globalInstructions = await resInst.json();
             allTemplates = await resDash.json();
             renderTable(allTemplates);
         } catch (error) {
-            document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error de conexión: ${error.message}</p>`;
+            document.getElementById('tableContainer').innerHTML = `<p style="color:red">Error de conexion: ${escapeHtml(error.message)}</p>`;
         }
     }
 
     function renderTable(templates) {
-        if(templates.length === 0) {
-            document.getElementById('tableContainer').innerHTML = '<p>No se encontraron plantillas.</p>'; return;
+        if (templates.length === 0) {
+            document.getElementById('tableContainer').innerHTML = '<p>No se encontraron plantillas.</p>';
+            return;
         }
-        let html = `<table><thead><tr><th style="width:80px">ID</th><th>Nombre</th><th style="width:120px">Estado</th><th style="width:100px">Acción</th></tr></thead><tbody>`;
+
+        let html = '<table><thead><tr><th style="width:80px">ID</th><th>Nombre</th><th style="width:120px">Estado</th><th style="width:100px">Accion</th></tr></thead><tbody>';
         templates.forEach(tpl => {
             const hasConfig = !!globalInstructions[tpl.id];
-            const badge = hasConfig ? `<span class="badge badge-success">Configurado</span>` : `<span class="badge badge-missing">Sin Modal</span>`;
+            const badge = hasConfig ? '<span class="badge badge-success">Configurado</span>' : '<span class="badge badge-missing">Sin Modal</span>';
             const btnClass = hasConfig ? 'btn-outline' : 'btn-primary';
             const btnText = hasConfig ? 'Editar' : 'Crear';
-            html += `<tr><td><code>${tpl.id}</code></td><td><strong>${tpl.name}</strong></td><td>${badge}</td>
-                    <td><button class="btn ${btnClass}" onclick="openEditor(${tpl.id}, '${escapeHtml(tpl.name)}')">${btnText}</button></td></tr>`;
+            html += `<tr><td><code>${tpl.id}</code></td><td><strong>${escapeHtml(tpl.name)}</strong></td><td>${badge}</td><td><button class="btn ${btnClass}" onclick="openEditor(${tpl.id}, '${escapeJsString(tpl.name)}')">${btnText}</button></td></tr>`;
         });
-        html += `</tbody></table>`;
+        html += '</tbody></table>';
         document.getElementById('tableContainer').innerHTML = html;
     }
 
@@ -143,9 +137,6 @@
         renderTable(filtered);
     }
 
-    // ===========================
-    // FUNCIONES DEL EDITOR
-    // ===========================
     function openEditor(id, name) {
         document.getElementById('view-dashboard').classList.add('hidden');
         document.getElementById('view-editor').classList.remove('hidden');
@@ -154,11 +145,11 @@
         document.getElementById('editorTitle').innerText = name;
 
         if (globalInstructions[id] && globalInstructions[id].steps) {
-            // Clonamos el array para no modificar el global hasta guardar
             currentSteps = JSON.parse(JSON.stringify(globalInstructions[id].steps));
         } else {
             currentSteps = [{ title: '', content: '', image: '' }];
         }
+
         renderSteps();
     }
 
@@ -173,38 +164,37 @@
         container.innerHTML = '';
 
         currentSteps.forEach((step, index) => {
-            // --- LÓGICA PARA MOSTRAR IMAGEN ACTUAL ---
             let imgHtml = '';
             if (step.image) {
-                // Aseguramos que la ruta empiece con / para que el servidor la encuentre
                 const imgPath = step.image.startsWith('/') ? step.image : '/' + step.image;
                 imgHtml = `
                     <div class="current-image-container">
                         <div>
                             <strong>Imagen actual:</strong><br>
-                            <small style="word-break: break-all;">${step.image}</small>
+                            <small style="word-break: break-all;">${escapeHtml(step.image)}</small>
                         </div>
                         <div style="text-align:right;">
-                            <img src="${imgPath}" class="img-editor-preview"><br>
+                            <img src="${imgPath}" class="img-editor-preview" alt="Vista previa">
+                            <br>
                             <button class="btn btn-danger" style="margin-top:5px; padding:4px 8px; font-size:0.8rem;" onclick="removeImage(${index})">Quitar Imagen</button>
                         </div>
                     </div>`;
             }
-            // -----------------------------------------
 
             const stepHTML = `
-                <div class="step-item">
+                <div class="step-item" data-step-index="${index}">
                     <div class="step-count">${index + 1}</div>
                     <div style="text-align:right;"><button class="btn btn-danger" onclick="removeStep(${index})">Eliminar Paso</button></div>
 
-                    <label>Título del Paso</label>
-                    <input type="text" value="${escapeHtml(step.title || '')}" placeholder="Ej: Confirmación" onchange="updateStep(${index}, 'title', this.value)">
-                    
+                    <label>Titulo del Paso</label>
+                    <input class="js-step-title" type="text" value="${escapeHtml(step.title || '')}" placeholder="Ej: Confirmacion" oninput="updateStep(${index}, 'title', this.value)">
+
                     <label>Contenido (HTML permitido)</label>
-                    <textarea placeholder="Instrucciones..." onchange="updateStep(${index}, 'content', this.value)">${step.content || ''}</textarea>
-                    
+                    <textarea class="js-step-content" placeholder="Instrucciones..." oninput="updateStep(${index}, 'content', this.value)">${escapeHtml(step.content || '')}</textarea>
+
                     <label>Imagen de ayuda</label>
-                    ${imgHtml} <input type="file" id="fileInput-${index}" style="margin-top:10px;" onchange="uploadImage(this, ${index})">
+                    ${imgHtml}
+                    <input type="file" id="fileInput-${index}" style="margin-top:10px;" onchange="uploadImage(this, ${index})">
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', stepHTML);
@@ -221,63 +211,92 @@
     }
 
     function removeStep(index) {
-        if(confirm('¿Eliminar este paso?')) { currentSteps.splice(index, 1); renderSteps(); }
+        if (confirm('Eliminar este paso?')) {
+            currentSteps.splice(index, 1);
+            renderSteps();
+        }
     }
-    
+
     function removeImage(index) {
         currentSteps[index].image = '';
-        // Limpiamos el input file por si quieren subir la misma imagen de nuevo
         const fileInput = document.getElementById(`fileInput-${index}`);
-        if(fileInput) fileInput.value = '';
+        if (fileInput) fileInput.value = '';
         renderSteps();
     }
 
     async function uploadImage(input, index) {
         if (!input.files[0]) return;
+
         const formData = new FormData();
         formData.append('image', input.files[0]);
+
         try {
-            input.disabled = true; input.nextElementSibling ? input.nextElementSibling.innerText = "Subiendo..." : null;
-            const res = await fetch('api/upload', { method: 'POST', body: formData });
-            if(!res.ok) throw new Error();
+            input.disabled = true;
+            const res = await fetch(`${ADMIN_API_BASE}/upload`, { method: 'POST', body: formData });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'No se pudo subir la imagen.');
+            }
+
             const data = await res.json();
-            currentSteps[index].image = data.path; 
+            currentSteps[index].image = data.path;
             renderSteps();
-        } catch(e) { 
-            alert('Error al subir imagen.'); input.disabled = false; 
+        } catch (error) {
+            input.disabled = false;
+            alert(error.message || 'Error al subir imagen.');
         }
     }
 
+    function syncStepsFromDom() {
+        document.querySelectorAll('#stepsContainer .step-item').forEach(stepEl => {
+            const index = Number(stepEl.dataset.stepIndex);
+            if (!currentSteps[index]) return;
+
+            const titleInput = stepEl.querySelector('.js-step-title');
+            const contentInput = stepEl.querySelector('.js-step-content');
+
+            currentSteps[index].title = titleInput ? titleInput.value : currentSteps[index].title;
+            currentSteps[index].content = contentInput ? contentInput.value : currentSteps[index].content;
+        });
+    }
+
     async function saveData() {
+        syncStepsFromDom();
+
         const id = document.getElementById('currentTemplateId').value;
-        if(!id) return;
-        // Filtramos pasos vacíos
+        if (!id) return;
+
         const validSteps = currentSteps.filter(s => s.title.trim() !== '' || s.content.trim() !== '' || s.image !== '');
-        if (validSteps.length === 0 && !confirm("Se guardará una plantilla vacía (desactivará el modal). ¿Continuar?")) return;
+        if (validSteps.length === 0 && !confirm('Se guardara una plantilla vacia (desactivara el modal). Continuar?')) return;
 
         if (validSteps.length > 0) globalInstructions[id] = { steps: validSteps };
         else delete globalInstructions[id];
 
         try {
-            await fetch('api/instructions', {
+            const response = await fetch(`${ADMIN_API_BASE}/instructions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(globalInstructions)
             });
-            alert('✅ Cambios guardados.'); showDashboard();
-        } catch (e) { alert('Error al guardar en servidor.'); }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Error al guardar en servidor.');
+            }
+
+            alert('Cambios guardados.');
+            showDashboard();
+        } catch (error) {
+            alert(error.message || 'Error al guardar en servidor.');
+        }
     }
 
-    // ===========================
-    // NUEVO: LÓGICA DE VISTA PREVIA
-    // ===========================
     function startPreview() {
-        // Usamos los datos que están actualmente en pantalla, aunque no se hayan guardado
+        syncStepsFromDom();
         previewSteps = currentSteps.filter(s => s.title || s.content || s.image);
-        if (previewSteps.length === 0) return alert("No hay pasos con contenido para previsualizar.");
-        
+        if (previewSteps.length === 0) return alert('No hay pasos con contenido para previsualizar.');
+
         previewIndex = 0;
-        // Estructura HTML idéntica a la de modal_engine.js
         const modalHTML = `
             <div id="sdpCustomModalPreview" class="sdp-modal-backdrop">
                 <div class="sdp-modal-content">
@@ -288,10 +307,10 @@
                     <div class="sdp-modal-body">
                         <div style="background:#fff3cd; color:#856404; padding:5px; text-align:center; font-size:12px; margin-bottom:10px;">MODO VISTA PREVIA</div>
                         <div id="previewImageContainer" style="text-align:center; margin-bottom:15px;"></div>
-                        <div id="previewTextContent" style="font-size: 14px; color: #333;"></div>
+                        <div id="previewTextContent" style="font-size:14px; color:#333;"></div>
                     </div>
                     <div class="sdp-modal-footer">
-                         <div style="float:left; font-size:12px; color:#999; margin-top:5px;">
+                        <div style="float:left; font-size:12px; color:#999; margin-top:5px;">
                             Paso <span id="previewStepCount"></span> de <span id="previewTotalSteps"></span>
                         </div>
                         <button id="previewPrevBtn" class="btn" onclick="changePreviewStep(-1)">Anterior</button>
@@ -308,14 +327,14 @@
     function renderPreviewStep() {
         const step = previewSteps[previewIndex];
         document.getElementById('previewTitle').innerText = step.title;
-        document.getElementById('previewTextContent').innerHTML = step.content;
+        document.getElementById('previewTextContent').innerHTML = sanitizeRichHtml(step.content);
         document.getElementById('previewStepCount').innerText = previewIndex + 1;
         document.getElementById('previewTotalSteps').innerText = previewSteps.length;
 
         const imgCont = document.getElementById('previewImageContainer');
         if (step.image) {
             const imgPath = step.image.startsWith('/') ? step.image : '/' + step.image;
-            imgCont.innerHTML = `<img src="${imgPath}" style="max-width:100%; max-height:300px; border:1px solid #ddd;">`;
+            imgCont.innerHTML = `<img src="${imgPath}" style="max-width:100%; max-height:300px; border:1px solid #ddd;" alt="Vista previa">`;
         } else {
             imgCont.innerHTML = '';
         }
@@ -335,10 +354,32 @@
         document.getElementById('preview-container').innerHTML = '';
     }
 
-    // Utilidad
     function escapeHtml(text) {
-        if(!text) return '';
-        return text.replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeJsString(text) {
+        return String(text || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/\r/g, ' ')
+            .replace(/\n/g, ' ');
+    }
+
+    function sanitizeRichHtml(html) {
+        if (!html) return '';
+        return String(html)
+            .replace(/<\s*(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+            .replace(/<\s*(script|style|iframe|object|embed|link|meta)(\s|\/|>)[^>]*>/gi, '')
+            .replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+            .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, ' $1="#"')
+            .replace(/\s(href|src)\s*=\s*(['"])\s*data:text\/html[\s\S]*?\2/gi, ' $1="#"');
     }
 </script>
 
