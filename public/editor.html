@@ -59,7 +59,7 @@
             <div class="card stack">
                 <div>
                     <strong>Campo de Item</strong>
-                    <div style="font-size:12px;color:#666;margin:6px 0 8px;">Selecciona el campo UDF que representa "Articulo (Falla presentada)".</div>
+                    <div style="font-size:12px;color:#666;margin:6px 0 8px;">Selecciona el campo que representa "Articulo (Falla presentada)".</div>
                     <select id="itemFieldSelect" onchange="updateItemField(this.value)"></select>
                     <div id="fieldHelp" style="font-size:12px;color:#666;margin-top:8px;"></div>
                 </div>
@@ -217,14 +217,18 @@ function showDashboard() {
 
 function renderFieldSelector() {
     const udfFields = currentTemplateMeta && Array.isArray(currentTemplateMeta.udf_fields) ? currentTemplateMeta.udf_fields : [];
+    const knownFields = [{ name: 'ITEM', label: 'ITEM (Falla o problema)' }];
     let html = '<option value="">Sin campo especifico</option>';
+    knownFields.forEach(field => {
+        html += `<option value="${escapeHtml(field.name)}" ${currentTemplateConfig.item_field === field.name ? 'selected' : ''}>${escapeHtml(field.label)}</option>`;
+    });
     udfFields.forEach(field => {
         html += `<option value="${escapeHtml(field.name)}" ${currentTemplateConfig.item_field === field.name ? 'selected' : ''}>${escapeHtml(field.name)}</option>`;
     });
     document.getElementById('itemFieldSelect').innerHTML = html;
     let helpText = udfFields.length
-        ? `Campos UDF detectados: ${udfFields.map(field => field.name).join(', ')}`
-        : 'No se detectaron campos udf_* en el layout del template.';
+        ? `Campo estandar disponible: ITEM. Campos UDF detectados: ${udfFields.map(field => field.name).join(', ')}`
+        : 'Campo estandar disponible: ITEM.';
     document.getElementById('fieldHelp').innerText = helpText;
 }
 

@@ -10,6 +10,17 @@ let currentStepIndex = 0;
 let lastSelectionKey = '';
 let watchIntervalId = null;
 
+function resolveCurrentTemplateId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromUrl = String(urlParams.get('reqTemplate') || '').trim();
+    if (fromUrl) return fromUrl;
+
+    const fromGlobal = String(window.templateID || window.templateId || '').trim();
+    if (fromGlobal) return fromGlobal;
+
+    return '';
+}
+
 function injectStyles() {
     if (document.getElementById('sdpModalStyles')) return;
 
@@ -114,13 +125,26 @@ function updateModalContent(index) {
 function resolveFieldElement(fieldName) {
     if (!fieldName) return null;
 
-    const selectors = [
-        `[name="${fieldName}"]`,
-        `#${cssEscape(fieldName)}`,
-        `[id$="${fieldName}"]`,
-        `[data-name="${fieldName}"]`,
-        `[data-columnname="${fieldName}"]`
-    ];
+    const variants = Array.from(new Set([
+        String(fieldName || '').trim(),
+        String(fieldName || '').trim().toLowerCase(),
+        String(fieldName || '').trim().toUpperCase()
+    ].filter(Boolean)));
+
+    const selectors = [];
+    variants.forEach(variant => {
+        selectors.push(
+            `[name="${variant}"]`,
+            `#${cssEscape(variant)}`,
+            `[id$="${variant}"]`,
+            `[data-name="${variant}"]`,
+            `[data-columnname="${variant}"]`,
+            `[data-field="${variant}"]`,
+            `[data-fafrkey="${variant}"]`,
+            `[fafr-name="${variant}"]`,
+            `[data-atm="${variant}"]`
+        );
+    });
 
     for (let i = 0; i < selectors.length; i += 1) {
         const found = document.querySelector(selectors[i]);
@@ -130,8 +154,34 @@ function resolveFieldElement(fieldName) {
     return null;
 }
 
+function readSelectionFromWindow() {
+    const cached = window.__sdpSelectedItem;
+    if (!cached || typeof cached !== 'object') return { key: '', id: '', text: '' };
+
+    const id = String(cached.id || '').trim();
+    const text = String(cached.name || cached.text || '').trim();
+    if (!id && !text) return { key: '', id: '', text: '' };
+
+    return { key: `${id}::${text}`.trim(), id, text };
+}
+
+function readSelect2Text(fieldEl) {
+    if (!fieldEl) return '';
+
+    const controlHolder = fieldEl.closest('.control-holder');
+    if (controlHolder) {
+        const chosen = controlHolder.querySelector('.select2-chosen');
+        if (chosen && chosen.textContent) return String(chosen.textContent).trim();
+    }
+
+    const siblingContainer = fieldEl.parentElement && fieldEl.parentElement.querySelector('.select2-chosen');
+    if (siblingContainer && siblingContainer.textContent) return String(siblingContainer.textContent).trim();
+
+    return '';
+}
+
 function readFieldSelection(fieldEl) {
-    if (!fieldEl) return { key: '', id: '', text: '' };
+    if (!fieldEl) return readSelectionFromWindow();
 
     let id = '';
     let text = '';
@@ -145,6 +195,13 @@ function readFieldSelection(fieldEl) {
         text = String(fieldEl.getAttribute('data-display-value') || fieldEl.dataset && fieldEl.dataset.displayValue || '').trim();
         if (!text) text = id;
     }
+
+    const select2Text = readSelect2Text(fieldEl);
+    if (select2Text) text = select2Text;
+
+    const cachedSelection = readSelectionFromWindow();
+    if (cachedSelection.id && !id) id = cachedSelection.id;
+    if (cachedSelection.text && (!text || text === id)) text = cachedSelection.text;
 
     return { key: `${id}::${text}`.trim(), id, text };
 }
@@ -175,8 +232,6 @@ function startWatchingItemField(templateId, templateConfig) {
 
     watchIntervalId = setInterval(() => {
         const fieldEl = resolveFieldElement(templateConfig.item_field);
-        if (!fieldEl) return;
-
         const selection = readFieldSelection(fieldEl);
         if (!selection.key || selection.key === '::') return;
         if (selection.key === lastSelectionKey) return;
@@ -185,6 +240,7 @@ function startWatchingItemField(templateId, templateConfig) {
         if (!steps.length) return;
 
         lastSelectionKey = selection.key;
+        window.__sdpSelectedItem = { id: selection.id, name: selection.text };
         console.log(`SDP-Modal: Mostrando modal para item ${selection.id || selection.text} en plantilla ${templateId}.`);
         showInstructionsModal(steps);
     }, 800);
@@ -266,8 +322,7 @@ function cssEscape(value) {
 }
 
 (function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const templateId = urlParams.get('reqTemplate');
+    const templateId = resolveCurrentTemplateId();
 
     if (!templateId) return;
 
