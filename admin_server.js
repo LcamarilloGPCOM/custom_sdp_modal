@@ -279,14 +279,25 @@ function extractFieldNamesFromLayouts(layouts) {
 function mapTemplateDetails(template) {
     const allFields = extractFieldNamesFromLayouts(template.layouts || []);
     const udfFields = allFields.filter(field => /^udf_\d+$/i.test(field.name));
+    const requestData = template.request || {};
+    const category = requestData.category || template.category || null;
+    const subcategory = requestData.subcategory || template.subcategory || null;
 
     return {
         id: String(template.id || ''),
         name: sanitizeText(template.name),
         is_service_template: Boolean(template.is_service_template),
+        category: category ? {
+            id: String(category.id || '').trim(),
+            name: sanitizeText(category.name)
+        } : null,
+        subcategory: subcategory ? {
+            id: String(subcategory.id || '').trim(),
+            name: sanitizeText(subcategory.name)
+        } : null,
         fields: allFields,
         udf_fields: udfFields,
-        request: template.request || {}
+        request: requestData
     };
 }
 

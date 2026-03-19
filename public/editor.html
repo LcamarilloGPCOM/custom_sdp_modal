@@ -222,9 +222,19 @@ function renderFieldSelector() {
         html += `<option value="${escapeHtml(field.name)}" ${currentTemplateConfig.item_field === field.name ? 'selected' : ''}>${escapeHtml(field.name)}</option>`;
     });
     document.getElementById('itemFieldSelect').innerHTML = html;
-    document.getElementById('fieldHelp').innerText = udfFields.length
+    let helpText = udfFields.length
         ? `Campos UDF detectados: ${udfFields.map(field => field.name).join(', ')}`
         : 'No se detectaron campos udf_* en el layout del template.';
+    if (currentTemplateMeta && currentTemplateMeta.subcategory && currentTemplateMeta.subcategory.name) {
+        helpText += ` | Subcategoria detectada: ${currentTemplateMeta.subcategory.name}`;
+    }
+    document.getElementById('fieldHelp').innerText = helpText;
+}
+
+function getTemplateScopedItems() {
+    const subcategoryId = currentTemplateMeta && currentTemplateMeta.subcategory && String(currentTemplateMeta.subcategory.id || '').trim();
+    if (!subcategoryId) return allItems;
+    return allItems.filter(item => item.subcategory && String(item.subcategory.id) === subcategoryId);
 }
 
 function updateItemField(value) {
@@ -294,13 +304,16 @@ function renderConfiguredItems() {
 
 function renderItemPicker() {
     const term = document.getElementById('itemSearchInput').value.trim().toLowerCase();
-    const items = allItems.filter(item => {
+    const scopedItems = getTemplateScopedItems();
+    const items = scopedItems.filter(item => {
         if (!term) return true;
         return `${item.id} ${item.name} ${item.subcategory ? item.subcategory.name : ''}`.toLowerCase().includes(term);
     }).slice(0, term ? 60 : 20);
     const container = document.getElementById('availableItems');
     if (!items.length) {
-        container.innerHTML = '<div class="empty">No se encontraron articulos.</div>';
+        container.innerHTML = scopedItems.length
+            ? '<div class="empty">No se encontraron articulos con ese criterio.</div>'
+            : '<div class="empty">No hay articulos activos asociados a la subcategoria de esta plantilla.</div>';
         return;
     }
     container.innerHTML = items.map(item => {
@@ -313,6 +326,7 @@ function renderItemPicker() {
             </div>
         </div>`;
     }).join('');
+
 }
 
 function selectDefaultTarget() {
