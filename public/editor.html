@@ -225,9 +225,6 @@ function renderFieldSelector() {
     let helpText = udfFields.length
         ? `Campos UDF detectados: ${udfFields.map(field => field.name).join(', ')}`
         : 'No se detectaron campos udf_* en el layout del template.';
-    if (currentTemplateMeta && currentTemplateMeta.subcategory && currentTemplateMeta.subcategory.name) {
-        helpText += ` | Subcategoria detectada: ${currentTemplateMeta.subcategory.name}`;
-    }
     document.getElementById('fieldHelp').innerText = helpText;
 }
 
@@ -269,9 +266,15 @@ function renderSidebar() {
 }
 
 function renderScope() {
-    document.getElementById('scopeLabel').innerText = activeTarget.type === 'item'
-        ? `Articulo especifico (#${activeTarget.itemId})`
-        : 'Modal general';
+    if (activeTarget.type === 'item') {
+        const item = getItemById(activeTarget.itemId);
+        const itemLabel = item && item.name
+            ? item.name
+            : (currentTemplateConfig.items[activeTarget.itemId] && currentTemplateConfig.items[activeTarget.itemId].label) || `Item ${activeTarget.itemId}`;
+        document.getElementById('scopeLabel').innerText = `Articulo especifico: ${itemLabel}`;
+    } else {
+        document.getElementById('scopeLabel').innerText = 'Modal general';
+    }
     document.getElementById('scopeNote').innerText = activeTarget.type === 'item' && !currentTemplateConfig.item_field
         ? 'Estas editando un modal por articulo, pero aun no has seleccionado el campo del template que representa "Articulo (Falla presentada)".'
         : activeTarget.type === 'item'
