@@ -8,14 +8,12 @@ const multer = require('multer');
 const axios = require('axios');
 const https = require('https');
 const app = express();
-const PORT = 3050;
-
 const PORT = process.env.PORT || 3050;
 const SDP_API_KEY = process.env.SDP_API_KEY
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
+app.use('/', express.static(__dirname + '/public'));
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, './images'),
